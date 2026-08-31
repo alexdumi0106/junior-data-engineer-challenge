@@ -2,9 +2,9 @@ name: Daily Data Pipeline
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
+  schedule:
+    - cron: "0 16 * * *"
 
 jobs:
   run-pipeline:
