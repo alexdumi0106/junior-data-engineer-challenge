@@ -192,3 +192,44 @@ During the data cleaning and transformation process, I made a few decisions base
 - Future FX dates are not requested from the API. Orders that depend on rates that are not available yet (future dates) can be included in later daily runs once the required rates become available.
 
 These decisions were based on the initial inspection of the dataset using `inspect_orders.py` and `profile_orders.py`.
+
+## Writeup
+
+### Data issues found in `orders_raw`
+During the initial inspection of `orders_raw`, I found several data quality issues that could affect the final calculations.
+
+The dataset contained duplicate rows, so I removed them before applying any further transformations.
+
+Some rows had missing `customer_id` values. I checked whether the same `customer_email` appeared in other rows with a known customer ID. When a consistent mapping existed, I used that value to recover the missing ID. Rows where the customer ID could not be recovered were excluded because customer-level spending cannot be calculated reliably without an identifier.
+
+Some product categories were also missing. I checked whether the same `product_name` appeared elsewhere with a known category and used that category when possible. This allowed me to recover missing values without assigning categories arbitrarily.
+
+The `order_ts` column contained more than one timestamp format, including numeric timestamps and regular date-time strings. I converted these formats into a consistent PostgreSQL timestamp so they could be handled in the same way.
+
+I also found invalid numeric values. Orders with `qty <= 0` were excluded because they do not represent valid sales quantities. Negative prices were excluded as well. The value `999999` appeared as a suspicious price value during the profiling step, so I treated it as invalid and removed those rows from the cleaned dataset.
+
+Text fields such as email, status, channel, currency, and country were normalized to reduce inconsistencies caused by casing or extra spaces.
+
+These decisions were based on the patterns observed during the inspection and profiling steps rather than on assumptions made before looking at the data.
+
+### Monitoring in production
+
+The pipeline currently runs through GitHub Actions, where each execution has a visible success or failure status and the logs can be used to identify which step failed.
+
+In a production environment, I would not rely only on manually checking the GitHub Actions page. I would configure notifications for failed workflow runs, for example by sending an email or a Slack/Teams alert when the daily job fails.
+
+I would also monitor whether the pipeline actually completed its expected updates. The result tables contain a `refreshed_at` timestamp, so this could be checked to detect cases where the pipeline has not refreshed the data within the expected daily interval.
+
+I would monitor a few basic data quality metrics as well, such as the number of processed rows, missing values, rejected rows, and the number of FX rates retrieved. Unexpected changes in these values could indicate a problem even when the job itself finishes successfully.
+
+For a larger production system, these checks could be connected to a monitoring and alerting service so that failures or unusual results generate an automatic notification.
+
+### AI usage
+
+I used ChatGPT as a support tool while working on this challenge. I mainly used it to discuss the project structure, clarify concepts and troubleshoot errors.
+
+I used the guidance that matched the requirements and the patterns I observed in the dataset. For example, AI helped me reason through the FX rate fallback logic and the structure of the daily pipeline.
+
+I did not use any suggestions without checking them. I inspected the source data with my own profiling scripts, tested the SQL transformations in PostgreSQL, ran the pipeline locally, and tested the final workflow in GitHub Actions. When something did not work or did not match the project, I changed it. For example, I fixed implementation errors found during testing, and changed the GitHub Actions Python version after identifying a dependency compatibility issue.
+
+The final decisions about data cleaning and transformation were based on the actual dataset and the results of these tests made by me. AI was used as an assistant for guidance and debugging. 
