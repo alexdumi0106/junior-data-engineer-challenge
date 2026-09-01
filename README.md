@@ -87,7 +87,7 @@ After the currency conversion, the amounts are grouped by `customer_id` and summ
 The table is refreshed each time the pipeline runs, so the results are updated when new FX rates become available.
 
 ## Country and category sales
-The `country_category_sales` calculation is used to identify countries where the combined sales for Books and Electronics exceed the range of 40.000 EUR.
+The `country_category_sales` calculation is used to identify countries where the combined sales for Books and Electronics exceed the 40.000 EUR.
 
 Only completed orders from the `Books` and `Electronics` categories are included. EUR orders are used directly, while RON orders are converted to EUR using the same FX conversion logic as in the customer spend calculation.
 
@@ -108,7 +108,7 @@ The scheduled workflow runs the following steps:
 
 The database connection string is stored securely as the `DATABASE_URL` GitHub repository secret and is passed to the pipeline as an environment variable.
 
-The daily run refreshes the available FX rates first and then recalculates the customer spend and country/category sales tables.
+The daily run loads the latest raw orders, rebuilds the cleaned orders table, refreshes the available FX rates, and then recalculates the customer spend and country/category sales tables.
 
 ## How to run the project
 
@@ -164,7 +164,7 @@ python src/profile_orders.py
 python src/pipeline.py
 ```
 
-The pipeline retrieves the required FX rates and then refreshes the customer spend and country/category sales results.
+The pipeline loads the raw orders, cleans the data, retrieves the required FX rates, and then refreshes the customer spend and country/category sales results.
 
 The pipeline can also be run automatically through the GitHub Actions workflow configured in `.github/workflows/daily_pipeline.yml`.
 
